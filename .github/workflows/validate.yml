@@ -1,0 +1,26 @@
+name: Validate pet package
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate source package
+        run: python scripts/validate_release.py
+      - name: Build deterministic archive
+        run: python scripts/build_release.py
+      - name: Validate release archive
+        shell: bash
+        run: python scripts/validate_release.py --archive "dist/zituan-codex-pet-v$(tr -d '\r\n' < VERSION).zip"

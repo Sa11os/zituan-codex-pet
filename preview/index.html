@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>紫团 · 桌宠预览</title>
+<style>
+:root{font-family:"Microsoft YaHei",system-ui,sans-serif;color:#42384e;background:#efedf5;color-scheme:light}*{box-sizing:border-box}body{margin:0;padding:32px 24px}main{max-width:1060px;margin:auto}h1{font-size:26px;letter-spacing:1px;margin:0 0 8px}p{color:#7a6f87;margin:0 0 24px;line-height:1.6}header{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:24px}button{border:1px solid #d9d2e3;border-radius:12px;padding:10px 16px;background:#fff;color:#5f4a77;cursor:pointer}button:focus-visible{outline:3px solid #a993cc;outline-offset:3px}#grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.tile{background:#fcfbfe;border:1px solid #e3ddeb;border-radius:20px;display:flex;flex-direction:column;align-items:center;padding:12px 10px 16px;min-width:0}.tile h2{font-size:14px;font-weight:500;color:#786a87;margin:10px 0 2px}canvas{width:192px;height:208px;display:block}#gaze{margin-top:20px;padding:18px 24px;display:flex;gap:32px;align-items:center;justify-content:center;background:#fcfbfe;border:1px solid #e3ddeb;border-radius:20px;min-height:250px}#gaze p{max-width:350px;margin:8px 0;color:#82728f}#gaze h2{font-size:20px;margin:0}body.dark{background:#201c29;color:#e6dfef}body.dark .tile,body.dark #gaze{background:#302a3d;border-color:#42394f}body.dark p,body.dark .tile h2,body.dark #gaze p{color:#b4a8c3}#status{font-size:12px;margin-top:18px;color:#84758f}@media(max-width:720px){body{padding:24px 12px}#grid{grid-template-columns:repeat(2,1fr);gap:10px}#gaze{flex-direction:column;gap:4px}header{align-items:flex-start}canvas{max-width:100%;height:auto}}@media(prefers-reduced-motion:reduce){#motion-note{display:block}}
+</style>
+<main>
+<header><div><h1>紫团</h1><p style="margin:0">银紫色的小小陪伴。</p></div><div><button id="pause">暂停动画</button> <button id="theme">切换深色</button></div></header>
+<div id="grid"></div>
+<section id="gaze"><canvas id="look" width="192" height="208" aria-label="跟随鼠标注视的紫团"></canvas><div><h2>目光跟随</h2><p>在页面上移动鼠标，看她轻轻转头。移回角色中心时，回到自然待机。</p></div></section>
+<div id="status" role="status">正在加载素材…</div>
+</main>
+<script>
+const rows=[['idle','待机',[280,110,110,140,140,320]],['running-right','向右移动',[120,120,120,120,120,120,120,220]],['running-left','向左移动',[120,120,120,120,120,120,120,220]],['waving','挥手',[140,140,140,280]],['jumping','跳跃',[140,140,140,140,280]],['failed','有点失落',[140,140,140,140,140,140,140,240]],['waiting','等你回应',[150,150,150,150,150,260]],['running','认真思考',[120,120,120,120,120,220]],['review','仔细查看',[150,150,150,150,150,280]]];
+const standard=false;
+const atlas=new Image();let ready=false,paused=matchMedia('(prefers-reduced-motion: reduce)').matches,elapsed=0,lastTime=null,direction=-1;
+const canvases=rows.map(([id,label],row)=>{const tile=document.createElement('section');tile.className='tile';const c=document.createElement('canvas');c.width=192;c.height=208;c.dataset.state=id;c.setAttribute('aria-label',label+'动画');const h=document.createElement('h2');h.textContent=label;tile.append(c,h);document.getElementById('grid').append(tile);return c});
+function paint(canvas,row,frame){const ctx=canvas.getContext('2d');ctx.clearRect(0,0,192,208);ctx.drawImage(atlas,frame*192,row*208,192,208,0,0,192,208);canvas.dataset.row=row;canvas.dataset.frame=frame;canvas.dataset.painted='true'}
+function frameAt(durations,time){let t=time%durations.reduce((a,b)=>a+b,0);for(let i=0;i<durations.length;i++){if(t<durations[i])return i;t-=durations[i]}return 0}
+function tick(time){if(lastTime!==null&&!paused)elapsed+=Math.min(time-lastTime,100);lastTime=time;if(ready){rows.forEach((r,i)=>paint(canvases[i],i,frameAt(r[2],elapsed)));const look=document.getElementById('look');if(direction<0||standard)paint(look,0,frameAt(rows[0][2],elapsed));else paint(look,9+Math.floor(direction/8),direction%8)}requestAnimationFrame(tick)}
+atlas.onload=()=>{if(atlas.naturalWidth!==1536||atlas.naturalHeight!==(standard?1872:2288)){document.getElementById('status').textContent='素材尺寸不正确';return}ready=true;document.getElementById('status').textContent=standard?'标准动作预览 · 注视素材制作中':'9 组动作 · 16 个注视方向';document.body.dataset.loaded='true'};
+atlas.onerror=()=>{document.getElementById('status').textContent='素材加载失败，请从仓库目录打开预览页，或使用 Release 压缩包中的 preview.html。'};
+atlas.src='../pet/lilac-chibi/spritesheet.webp';
+document.getElementById('pause').textContent=paused?'继续动画':'暂停动画';
+document.getElementById('pause').onclick=()=>{paused=!paused;document.getElementById('pause').textContent=paused?'继续动画':'暂停动画'};
+document.getElementById('theme').onclick=()=>{const dark=document.body.classList.toggle('dark');document.getElementById('theme').textContent=dark?'切换浅色':'切换深色'};
+document.addEventListener('pointermove',event=>{const box=document.getElementById('look').getBoundingClientRect();const dx=event.clientX-(box.left+box.width/2),dy=event.clientY-(box.top+box.height/2);direction=Math.hypot(dx,dy)<34?-1:Math.round(((Math.atan2(dx,-dy)*180/Math.PI+360)%360)/22.5)%16;document.getElementById('look').dataset.direction=direction});
+document.addEventListener('pointerleave',()=>{direction=-1});
+requestAnimationFrame(tick);
+</script>
+</html>

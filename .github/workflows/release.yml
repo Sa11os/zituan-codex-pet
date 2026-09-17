@@ -1,0 +1,36 @@
+name: Publish release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check tag and version
+        shell: bash
+        run: |
+          test "${GITHUB_REF_NAME}" = "v$(tr -d '\r\n' < VERSION)"
+      - name: Validate and build
+        run: |
+          python scripts/validate_release.py
+          python scripts/build_release.py
+          python scripts/validate_release.py --archive "dist/zituan-codex-pet-${GITHUB_REF_NAME}.zip"
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "${GITHUB_REF_NAME}"
+          "dist/zituan-codex-pet-${GITHUB_REF_NAME}.zip"
+          dist/SHA256SUMS.txt
+          --title "紫团 Codex 桌宠 ${GITHUB_REF_NAME}"
+          --notes-file RELEASE_NOTES.md
