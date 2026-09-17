@@ -28,6 +28,12 @@ def zip_info(name: str) -> ZipInfo:
     return info
 
 
+def text_bytes(path: Path) -> bytes:
+    """Return UTF-8 text with stable LF line endings on every platform."""
+    text = path.read_text(encoding="utf-8")
+    return text.replace("\r\n", "\n").replace("\r", "\n").encode("utf-8")
+
+
 def source_entries() -> list[tuple[str, bytes]]:
     preview = (ROOT / "preview" / "index.html").read_text(encoding="utf-8")
     preview = preview.replace(
@@ -36,12 +42,12 @@ def source_entries() -> list[tuple[str, bytes]]:
     )
 
     entries = [
-        ("ASSET-LICENSE.md", (ROOT / "ASSET-LICENSE.md").read_bytes()),
-        ("LICENSE.txt", (ROOT / "LICENSE").read_bytes()),
-        ("README.md", (ROOT / "docs" / "INSTALL.md").read_bytes()),
+        ("ASSET-LICENSE.md", text_bytes(ROOT / "ASSET-LICENSE.md")),
+        ("LICENSE.txt", text_bytes(ROOT / "LICENSE")),
+        ("README.md", text_bytes(ROOT / "docs" / "INSTALL.md")),
         (
             "lilac-chibi/pet.json",
-            (ROOT / "pet" / "lilac-chibi" / "pet.json").read_bytes(),
+            text_bytes(ROOT / "pet" / "lilac-chibi" / "pet.json"),
         ),
         (
             "lilac-chibi/spritesheet.webp",

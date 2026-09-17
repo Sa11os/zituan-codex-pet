@@ -34,6 +34,11 @@ def sha256_file(path: Path) -> str:
     return sha256_bytes(path.read_bytes())
 
 
+def text_bytes(path: Path) -> bytes:
+    text = path.read_text(encoding="utf-8")
+    return text.replace("\r\n", "\n").replace("\r", "\n").encode("utf-8")
+
+
 def webp_size(data: bytes) -> tuple[int, int]:
     if len(data) < 20 or data[:4] != b"RIFF" or data[8:12] != b"WEBP":
         raise ValueError("not a RIFF WebP file")
@@ -138,7 +143,7 @@ def validate_archive(path: Path) -> None:
         validate_manifest(manifest)
         if webp_size(atlas) != EXPECTED_SIZE:
             raise ValueError("archive spritesheet dimensions are invalid")
-        if manifest != MANIFEST.read_bytes():
+        if manifest != text_bytes(MANIFEST):
             raise ValueError("archive pet.json differs from source")
         if atlas != ATLAS.read_bytes():
             raise ValueError("archive spritesheet differs from source")
